@@ -181,6 +181,8 @@ class EB_GROMACS(CMakeMake):
 
         if gromacs_version >= '4.6':
             cuda = get_software_root('CUDA')
+            hip = get_software_root('HIP')
+
             if cuda:
                 # CUDA with double precision is currently not supported in GROMACS yet
                 # If easyconfig explicitly have double_precision=True error out,
@@ -211,6 +213,17 @@ class EB_GROMACS(CMakeMake):
                     cuda_cc_semicolon_sep = self.cfg.get_cuda_cc_template_value(
                         "cuda_cc_semicolon_sep").replace('.', '')
                     self.cfg.update('configopts', '-DGMX_CUDA_TARGET_SM="%s"' % cuda_cc_semicolon_sep)
+            elif hip:
+                self.cfg.update('configopts', "-DGMX_GPU=HIP")
+                
+                rocfft_root = get_software_root('rocFFT')
+                if rocfft_root:
+                    self.cfg.update('configopts', "-DGMX_GPU_FFT_LIBRARY=rocFFT")
+                    self.cfg.update('configopts', "-DROCFFT_ROOT=%s" % rocfft_root)
+
+
+                if '-DGMX_HIP_TARGET_ARCH' not in self.cfg['configopts']:
+                    self.log.warning("No -DGMX_HIP_TARGET_ARCH specified in configopts. GROMACS may fail to build.")
             else:
                 # explicitly disable GPU support if CUDA is not available,
                 # to avoid that GROMACS finds and uses a system-wide CUDA compiler
